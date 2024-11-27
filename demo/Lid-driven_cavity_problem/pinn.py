@@ -39,7 +39,7 @@ def pde(x, y):
     u_xx = dde.grad.hessian(y, x, component=0, i=0, j=0)
     u_yy = dde.grad.hessian(y, x, component=0, i=1, j=1)
     v_xx = dde.grad.hessian(y, x, component=1, i=0, j=0)
-    v_yy = dde.grad.hessian(y, x, component=1, j=1)
+    v_yy = dde.grad.hessian(y, x, component=1, i=1, j=1)
 
     # 动量方程
     momentum_x = u * u_x + v * u_y + p_x - nu * (u_xx + u_yy)
@@ -66,17 +66,17 @@ bc3 = dde.DirichletBC(geom, lambda x: 1, boundary_top, component=0)          # u
 bc4 = dde.DirichletBC(geom, lambda x: 0, boundary_top, component=1)          # v = 0
 
 # 设置数据
-data = dde.data.PDE(geom, pde, [bc1, bc2, bc3, bc4], num_domain=4000, num_boundary=400)
+data = dde.data.PDE(geom, pde, [bc1, bc2, bc3, bc4], num_domain=5000, num_boundary=500)
 
 # 神经网络结构
-net = dde.nn.FNN([2] + [50] * 5 + [3], "tanh", "Glorot uniform")
+net = dde.nn.FNN([2] + [100] * 8 + [3], "swish", "Glorot uniform")
 
 # 模型
 model = dde.Model(data, net)
 
-# 模型训练
-model.compile("adam", lr=1e-4)
-losshistory, train_state = model.train(iterations=5000)
+# L-BFGS 优化器
+model.compile("L-BFGS")
+losshistory, train_state = model.train(iterations=10000)
 
 # 预测流场
 X, Y = np.meshgrid(np.linspace(0, 1, 100), np.linspace(0, 1, 100))
@@ -99,4 +99,5 @@ plt.streamplot(X, Y, u, v, color="k", density=1.2)  # 流线图
 plt.title("Velocity Field Heatmap and Streamlines (Re = 100)")
 plt.xlabel("x")
 plt.ylabel("y")
+plt.savefig("Velocity Field Heatmap and Streamlines (Re = 100).png", dpi=300)
 plt.show()
